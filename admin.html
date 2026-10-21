@@ -25,13 +25,11 @@
       <h2>Connect this device</h2>
       <p>This page saves clips straight into your GitHub repository, so it needs a key from GitHub. You only do this once per device.</p>
       <ol>
-        <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → New fine-grained token</a>.</li>
-        <li>Name it <b>Site editor</b> and set <b>Expiration</b> to the longest option.</li>
-        <li>Under <b>Repository access</b> choose <b>Only select repositories</b> and pick <b>zsoltszabo777.github.io</b>.</li>
-        <li>Under <b>Permissions → Repository permissions</b>, set <b>Contents</b> to <b>Read and write</b>.</li>
-        <li>Click <b>Generate token</b>, copy it and paste it below.</li>
+        <li>Open <a href="https://github.com/settings/tokens/new?scopes=public_repo&description=Site%20editor" target="_blank" rel="noopener">GitHub → New token</a>. The name and the <b>public_repo</b> box are already filled in.</li>
+        <li>Set <b>Expiration</b> to <b>No expiration</b>.</li>
+        <li>Scroll down, click <b>Generate token</b>, copy it and paste it below.</li>
       </ol>
-      <label>GitHub token <input id="token" type="password" autocomplete="off" placeholder="github_pat_…"></label>
+      <label>GitHub token <input id="token" type="password" autocomplete="off" placeholder="ghp_…"></label>
       <button id="save-token" class="primary">Connect</button>
     </section>
 

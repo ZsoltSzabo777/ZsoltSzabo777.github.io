@@ -47,7 +47,7 @@ async function api(path, options = {}) {
     cache: "no-store",
   });
   if (res.status === 401) throw new Error("GitHub didn't accept the token. Disconnect and paste a new one.");
-  if (res.status === 403 || res.status === 404) throw new Error("The token can't access the repository. Check it has Contents: Read and write on zsoltszabo777.github.io.");
+  if (res.status === 403 || res.status === 404) throw new Error("This token isn't allowed to save to the site. Click \"Disconnect this device\" below and connect again with a new token.");
   if (res.status === 409) throw new Error("The file changed somewhere else. Reload the page and try again.");
   if (!res.ok) throw new Error(`GitHub error ${res.status}`);
   return res.json();
