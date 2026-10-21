@@ -8,14 +8,7 @@
       "id": "shorts",
       "label": "YouTube Shorts",
       "layout": "vertical",
-      "items": [
-        {
-          "title": "Which MotoGP class is the loudest? sound on for this one 😉",
-          "url": "https://www.youtube.com/shorts/di1IQ2u8fHU",
-          "date": "2026-10-09",
-          "views": 121009
-        }
-      ]
+      "items": []
     },
     {
       "id": "tiktok",
