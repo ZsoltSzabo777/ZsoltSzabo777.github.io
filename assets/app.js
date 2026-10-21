@@ -1,0 +1,179 @@
+// Everything on the page comes from the files in /content.
+// To add a section, add an entry to content/site.json and create its file.
+
+const state = { site: null, sections: {}, tab: {}, sort: {} };
+
+const $ = (sel) => document.querySelector(sel);
+
+function el(tag, attrs = {}, children = []) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(attrs)) {
+    if (key === "class") node.className = value;
+    else if (key === "text") node.textContent = value;
+    else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
+    else node.setAttribute(key, value);
+  }
+  for (const child of [].concat(children)) if (child) node.append(child);
+  return node;
+}
+
+async function loadJSON(path) {
+  const res = await fetch(path, { cache: "no-cache" });
+  if (!res.ok) throw new Error(`Could not load ${path}`);
+  return res.json();
+}
+
+function formatViews(n) {
+  if (n == null || n === "") return "";
+  n = Number(n);
+  if (n >= 1e6) return `${(n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, "")}M views`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(n >= 1e4 ? 0 : 1).replace(/\.0$/, "")}K views`;
+  return `${n} views`;
+}
+
+function formatDate(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return isNaN(d) ? iso : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function youtubeId(url) {
+  const m = String(url).match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/embed\/)([\w-]{11})/);
+  return m ? m[1] : null;
+}
+
+function platformOf(url) {
+  const u = String(url);
+  if (/youtu\.?be/.test(u)) return "YouTube";
+  if (/tiktok\.com/.test(u)) return "TikTok";
+  if (/instagram\.com/.test(u)) return "Instagram";
+  if (/facebook\.com|fb\.watch/.test(u)) return "Facebook";
+  return "Video";
+}
+
+function thumbnailFor(item) {
+  if (item.thumbnail) return item.thumbnail;
+  const id = youtubeId(item.url);
+  return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : null;
+}
+
+function sortItems(items, mode) {
+  const copy = [...items];
+  if (mode === "views") copy.sort((a, b) => (Number(b.views) || 0) - (Number(a.views) || 0));
+  else copy.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+  return copy;
+}
+
+function videoCard(item) {
+  const img = thumbnailFor(item);
+  const thumb = el("div", { class: "thumb" + (img ? " has-image" : "") }, [
+    el("span", { class: "platform", text: platformOf(item.url) }),
+    item.views ? el("span", { class: "badge", text: formatViews(item.views) }) : null,
+  ]);
+  if (img) thumb.style.backgroundImage = `url("${img}")`;
+  return el("a", { class: "card", href: item.url, target: "_blank", rel: "noopener" }, [
+    thumb,
+    el("div", { class: "card-body" }, [
+      el("h3", { text: item.title || "Untitled" }),
+      el("div", { class: "meta", text: formatDate(item.date) }),
+    ]),
+  ]);
+}
+
+function pillGroup(options, active, onPick, label) {
+  return el("div", { class: "pill-group", role: "tablist", "aria-label": label },
+    options.map(([value, text]) =>
+      el("button", {
+        class: value === active ? "active" : "",
+        role: "tab",
+        "aria-selected": String(value === active),
+        text,
+        onclick: () => onPick(value),
+      })
+    )
+  );
+}
+
+function renderVideos(id, data) {
+  const tabs = data.tabs || [];
+  const tabId = state.tab[id] || tabs[0]?.id;
+  const sort = state.sort[id] || data.defaultSort || "recent";
+  const tab = tabs.find((t) => t.id === tabId) || tabs[0];
+
+  const rerender = () => render();
+  const head = el("div", { class: "section-head" }, [
+    el("div", {}, [el("h2", { text: data.title }), data.intro ? el("p", { text: data.intro }) : null]),
+  ]);
+  const controls = el("div", { class: "controls" }, [
+    tabs.length > 1
+      ? pillGroup(tabs.map((t) => [t.id, t.label]), tab?.id, (v) => { state.tab[id] = v; rerender(); }, "Platform")
+      : el("span"),
+    pillGroup([["recent", "Most recent"], ["views", "Most viewed"]], sort, (v) => { state.sort[id] = v; rerender(); }, "Sort"),
+  ]);
+
+  const items = sortItems(tab?.items || [], sort);
+  const grid = items.length
+    ? el("div", { class: "grid" + (tab.layout === "vertical" ? " vertical" : "") }, items.map(videoCard))
+    : el("div", { class: "empty", text: "New clips coming soon." });
+
+  return [head, controls, grid];
+}
+
+function renderText(data) {
+  const side = el("aside", { class: "about-side" }, [
+    ...(data.stats || []).flatMap((s) => [
+      el("div", { class: "stat", text: s.value }),
+      el("div", { class: "stat-label", text: s.label }),
+    ]),
+    data.links?.length ? el("h3", { text: "Find me" }) : null,
+    ...(data.links || []).map((l) => el("a", { href: l.url, target: "_blank", rel: "noopener", text: l.label + " ↗" })),
+  ]);
+  return [
+    el("div", { class: "section-head" }, [el("h2", { text: data.title })]),
+    el("div", { class: "about" }, [
+      el("div", {}, (data.paragraphs || []).map((p) => el("p", { text: p }))),
+      side,
+    ]),
+  ];
+}
+
+function currentSectionId() {
+  const hash = location.hash.slice(1);
+  const ids = state.site.sections.map((s) => s.id);
+  return ids.includes(hash) ? hash : ids[0];
+}
+
+async function render() {
+  const id = currentSectionId();
+  document.querySelectorAll("nav a").forEach((a) => a.classList.toggle("active", a.dataset.id === id));
+
+  const main = $("#main");
+  try {
+    if (!state.sections[id]) {
+      const meta = state.site.sections.find((s) => s.id === id);
+      state.sections[id] = await loadJSON(meta.file);
+    }
+    const data = state.sections[id];
+    main.replaceChildren(...(data.type === "text" ? renderText(data) : renderVideos(id, data)));
+  } catch (err) {
+    main.replaceChildren(el("div", { class: "empty", text: err.message }));
+  }
+}
+
+async function init() {
+  state.site = await loadJSON("content/site.json");
+  const { name, tagline, headline } = state.site;
+  document.title = `${name} | ${tagline}`;
+  $("#brand").textContent = name;
+  $("#tagline").textContent = tagline;
+  $("#hero-title").textContent = headline || name;
+  $("#footer-name").textContent = name;
+  $("#year").textContent = new Date().getFullYear();
+  $("#nav").replaceChildren(
+    ...state.site.sections.map((s) => el("a", { href: `#${s.id}`, "data-id": s.id, text: s.title }))
+  );
+  window.addEventListener("hashchange", render);
+  render();
+}
+
+init();

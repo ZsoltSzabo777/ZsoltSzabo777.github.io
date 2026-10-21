@@ -1,0 +1,11 @@
+{
+  "type": "videos",
+  "title": "Red Bull Motorsports",
+  "intro": "Edits I've made for the official Red Bull Motorsports channels.",
+  "defaultSort": "recent",
+  "tabs": [
+    { "id": "youtube", "label": "YouTube", "items": [] },
+    { "id": "instagram", "label": "Instagram", "layout": "vertical", "items": [] },
+    { "id": "facebook", "label": "Facebook", "items": [] }
+  ]
+}
