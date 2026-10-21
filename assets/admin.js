@@ -146,6 +146,7 @@ async function onAdd(event) {
     tab.items.push(item);
     await writeFile(section.file, `Add clip: ${item.title}`);
     status(`Saved "${item.title}" to ${tab.label}. It will appear on the site in a minute or two.`, "ok");
+    $("#title-hint").textContent = autoTitle = "";
     $("#url").value = $("#title").value = $("#views").value = "";
     renderList();
   } catch (err) {
@@ -221,6 +222,51 @@ $("#disconnect").addEventListener("click", () => {
 });
 $("#section").addEventListener("change", () => { fillPlatforms(); renderList(); });
 $("#platform").addEventListener("change", renderList);
+// Public oEmbed endpoints that return a video's title. noembed.com is a fallback
+// for when a platform's own endpoint blocks requests from the browser.
+const OEMBED = {
+  youtube: (u) => [`https://www.youtube.com/oembed?format=json&url=${u}`, `https://noembed.com/embed?url=${u}`],
+  shorts: (u) => [`https://www.youtube.com/oembed?format=json&url=${u}`, `https://noembed.com/embed?url=${u}`],
+  tiktok: (u) => [`https://www.tiktok.com/oembed?url=${u}`, `https://noembed.com/embed?url=${u}`],
+};
+let autoTitle = "";
+let titleTimer;
+
+async function fetchTitle(url) {
+  const platform = detectPlatform(url);
+  const hint = $("#title-hint");
+  if (!OEMBED[platform]) {
+    if (autoTitle && $("#title").value === autoTitle) $("#title").value = autoTitle = "";
+    hint.textContent = platform ? "Instagram and Facebook don't share titles, so type this one in." : "";
+    return;
+  }
+  hint.textContent = "Getting the title…";
+  for (const endpoint of OEMBED[platform](encodeURIComponent(url))) {
+    try {
+      const res = await fetch(endpoint);
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (!data.title) continue;
+      if ($("#url").value.trim() !== url) return; // the link changed while we waited
+      // Only overwrite the title if it's empty or was filled in automatically.
+      const title = $("#title").value;
+      if (!title || title === autoTitle) {
+        $("#title").value = autoTitle = data.title.trim();
+      }
+      hint.textContent = "Title copied from the video. You can edit it.";
+      return;
+    } catch {}
+  }
+  hint.textContent = "Couldn't get the title automatically, so type it in.";
+}
+
+$("#url").addEventListener("input", () => {
+  clearTimeout(titleTimer);
+  const url = $("#url").value.trim();
+  if (/^https?:\/\/\S+\.\S+/.test(url)) titleTimer = setTimeout(() => fetchTitle(url), 400);
+  else $("#title-hint").textContent = "";
+});
+
 $("#url").addEventListener("input", () => {
   const platform = detectPlatform($("#url").value);
   if (!platform) return;

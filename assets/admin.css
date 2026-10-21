@@ -44,3 +44,4 @@ button.link { background: none; border: 0; color: var(--muted); text-decoration:
   .clip { grid-template-columns: 1fr 100px; }
   .clip .remove { grid-column: 1 / -1; justify-self: start; }
 }
+.field-hint { margin: -8px 0 14px; min-height: 1em; font-size: 13px; }
