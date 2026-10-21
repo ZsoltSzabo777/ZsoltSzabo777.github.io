@@ -113,7 +113,7 @@ function renderVideos(id, data) {
   ]);
 
   if (stacked) {
-    return [head, controls, ...tabs.map((t) => platformBlock(id, t, sort, data.previewCount || 8))];
+    return [head, controls, ...tabs.map((t) => platformRow(t, sort))];
   }
   return [head, controls, videoGrid(tab, sortItems(tab?.items || [], sort))];
 }
@@ -124,22 +124,35 @@ function videoGrid(tab, items) {
     : el("div", { class: "empty", text: "New clips coming soon." });
 }
 
-// One platform shown as its own block, trimmed to `limit` clips until "Show all" is clicked.
-function platformBlock(sectionId, tab, sort, limit) {
-  const key = `${sectionId}/${tab.id}`;
-  const all = sortItems(tab.items || [], sort);
-  const expanded = state.tab[key] === "all";
-  const items = expanded ? all : all.slice(0, limit);
-  const more = all.length > limit
-    ? el("button", {
-        class: "show-all",
-        text: expanded ? "Show less" : `Show all ${all.length}`,
-        onclick: () => { state.tab[key] = expanded ? "" : "all"; render(); },
-      })
-    : null;
+// One platform shown as a horizontal row that scrolls with the arrows or by swiping.
+function platformRow(tab, sort) {
+  const items = sortItems(tab.items || [], sort);
+  if (!items.length) {
+    return el("section", { class: "platform-block" }, [
+      el("div", { class: "platform-head" }, [el("h3", { text: tab.label })]),
+      el("div", { class: "empty", text: "New clips coming soon." }),
+    ]);
+  }
+
+  const row = el("div", { class: "row" + (tab.layout === "vertical" ? " vertical" : "") }, items.map(videoCard));
+  const scroll = (dir) => row.scrollBy({ left: dir * row.clientWidth * 0.9, behavior: "smooth" });
+  const prev = el("button", { class: "arrow", "aria-label": `Previous ${tab.label} clips`, text: "←", onclick: () => scroll(-1) });
+  const next = el("button", { class: "arrow", "aria-label": `Next ${tab.label} clips`, text: "→", onclick: () => scroll(1) });
+
+  const updateArrows = () => {
+    prev.disabled = row.scrollLeft <= 4;
+    next.disabled = row.scrollLeft + row.clientWidth >= row.scrollWidth - 4;
+  };
+  row.addEventListener("scroll", updateArrows, { passive: true });
+  window.addEventListener("resize", updateArrows);
+  requestAnimationFrame(updateArrows);
+
   return el("section", { class: "platform-block" }, [
-    el("div", { class: "platform-head" }, [el("h3", { text: tab.label }), more]),
-    videoGrid(tab, items),
+    el("div", { class: "platform-head" }, [
+      el("h3", { text: tab.label }),
+      el("div", { class: "arrows" }, [prev, next]),
+    ]),
+    row,
   ]);
 }
 
