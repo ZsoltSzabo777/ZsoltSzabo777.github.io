@@ -31,4 +31,4 @@ Open the section's file (for example `content/red-bull.json`), find the right ta
 { "id": "company-x", "title": "Company X", "file": "content/company-x.json" }
 ```
 
-A section can have any number of tabs. Use `"layout": "vertical"` on a tab for 9:16 clips.
+A section can have any number of platforms. `"display": "stacked"` shows them all on one page, in the order listed; leave it out to show them as tabs instead. Use `"layout": "vertical"` on a tab for 9:16 clips.

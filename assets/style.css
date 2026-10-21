@@ -120,3 +120,15 @@ main { padding: 24px max(16px, calc((100% - var(--max)) / 2)) 80px; min-height: 
   .hero { padding-top: 48px; }
   .grid.vertical { grid-template-columns: repeat(2, 1fr); gap: 12px; }
 }
+
+.platform-block { margin-bottom: 48px; }
+.platform-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.platform-head h3 {
+  margin: 0; font: 800 28px/1 "Barlow Condensed", sans-serif; text-transform: uppercase;
+  padding-left: 12px; border-left: 4px solid var(--accent);
+}
+.show-all {
+  border: 1px solid var(--surface-2); background: none; color: var(--text); cursor: pointer;
+  padding: 6px 14px; border-radius: 999px; font: 500 14px Inter, sans-serif;
+}
+.show-all:hover { border-color: var(--accent); }

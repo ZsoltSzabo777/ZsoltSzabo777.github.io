@@ -104,19 +104,43 @@ function renderVideos(id, data) {
   const head = el("div", { class: "section-head" }, [
     el("div", {}, [el("h2", { text: data.title }), data.intro ? el("p", { text: data.intro }) : null]),
   ]);
+  const stacked = data.display === "stacked";
   const controls = el("div", { class: "controls" }, [
-    tabs.length > 1
+    tabs.length > 1 && !stacked
       ? pillGroup(tabs.map((t) => [t.id, t.label]), tab?.id, (v) => { state.tab[id] = v; rerender(); }, "Platform")
       : el("span"),
-    pillGroup([["recent", "Most recent"], ["views", "Most viewed"]], sort, (v) => { state.sort[id] = v; rerender(); }, "Sort"),
+    pillGroup([["views", "Most viewed"], ["recent", "Most recent"]], sort, (v) => { state.sort[id] = v; rerender(); }, "Sort"),
   ]);
 
-  const items = sortItems(tab?.items || [], sort);
-  const grid = items.length
+  if (stacked) {
+    return [head, controls, ...tabs.map((t) => platformBlock(id, t, sort, data.previewCount || 8))];
+  }
+  return [head, controls, videoGrid(tab, sortItems(tab?.items || [], sort))];
+}
+
+function videoGrid(tab, items) {
+  return items.length
     ? el("div", { class: "grid" + (tab.layout === "vertical" ? " vertical" : "") }, items.map(videoCard))
     : el("div", { class: "empty", text: "New clips coming soon." });
+}
 
-  return [head, controls, grid];
+// One platform shown as its own block, trimmed to `limit` clips until "Show all" is clicked.
+function platformBlock(sectionId, tab, sort, limit) {
+  const key = `${sectionId}/${tab.id}`;
+  const all = sortItems(tab.items || [], sort);
+  const expanded = state.tab[key] === "all";
+  const items = expanded ? all : all.slice(0, limit);
+  const more = all.length > limit
+    ? el("button", {
+        class: "show-all",
+        text: expanded ? "Show less" : `Show all ${all.length}`,
+        onclick: () => { state.tab[key] = expanded ? "" : "all"; render(); },
+      })
+    : null;
+  return el("section", { class: "platform-block" }, [
+    el("div", { class: "platform-head" }, [el("h3", { text: tab.label }), more]),
+    videoGrid(tab, items),
+  ]);
 }
 
 function renderText(data) {
