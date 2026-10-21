@@ -6,7 +6,9 @@ Everything you see on the site comes from the files in `content/`. You never nee
 
 ## Add a clip
 
-Open the section's file (for example `content/red-bull.json`), find the right tab, and add an entry to its `items` list:
+The easiest way is the site editor at https://zsoltszabo777.github.io/admin.html. It walks you through connecting a GitHub token the first time, then lets you add clips, update view counts and remove clips.
+
+To edit by hand instead, open the section's file (for example `content/red-bull.json`), find the right tab, and add an entry to its `items` list:
 
 ```json
 {

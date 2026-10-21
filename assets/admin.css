@@ -1,0 +1,46 @@
+.admin { max-width: 720px; margin: 0 auto; padding: 32px 16px 80px; }
+.panel { background: var(--surface); border-radius: var(--radius); padding: 24px; margin-bottom: 24px; }
+.panel h2 { margin: 0 0 16px; font: 800 28px/1 "Barlow Condensed", sans-serif; text-transform: uppercase; }
+.panel ol { padding-left: 20px; color: var(--muted); }
+.panel ol b { color: var(--text); }
+.panel a { color: var(--accent-2); }
+
+label { display: block; margin-bottom: 14px; font-size: 14px; font-weight: 500; color: var(--muted); }
+input, select {
+  display: block; width: 100%; margin-top: 6px; padding: 11px 12px;
+  background: var(--bg); color: var(--text); border: 1px solid var(--surface-2); border-radius: 8px;
+  font: 16px Inter, sans-serif;
+}
+input:focus, select:focus { outline: 2px solid var(--accent); border-color: transparent; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+button.primary {
+  border: 0; background: var(--accent); color: #fff; cursor: pointer;
+  padding: 12px 22px; border-radius: 999px; font: 600 15px Inter, sans-serif;
+}
+button.primary:disabled { opacity: 0.5; cursor: wait; }
+button.link { background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font: inherit; padding: 0; }
+
+.status { padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-weight: 500; }
+.status.ok { background: #0f3d26; color: #7ff0b0; }
+.status.error { background: #4a0d18; color: #ffb3c0; }
+.status.info { background: var(--surface-2); }
+
+.list-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.list-head h2 { margin: 0; }
+.hint { color: var(--muted); font-size: 14px; }
+
+.clip { display: grid; grid-template-columns: 1fr 130px auto; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--surface-2); }
+.clip a { color: var(--text); text-decoration: none; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.clip small { display: block; color: var(--muted); }
+.clip input { margin: 0; padding: 8px; }
+.clip .remove { background: none; border: 1px solid var(--surface-2); color: var(--muted); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+.clip .remove:hover { color: #fff; border-color: var(--accent); }
+.clip.removed { opacity: 0.35; }
+.clip.removed a { text-decoration: line-through; }
+
+@media (max-width: 520px) {
+  .two { grid-template-columns: 1fr; }
+  .clip { grid-template-columns: 1fr 100px; }
+  .clip .remove { grid-column: 1 / -1; justify-self: start; }
+}
