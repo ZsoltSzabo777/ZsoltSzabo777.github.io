@@ -9,6 +9,7 @@ const $ = (sel) => document.querySelector(sel);
 const files = {}; // path -> { data, sha }
 let sections = [];
 let pending = new Map(); // item -> { views, removed }
+let editingId = null; // id of the project loaded into the form, if any
 
 function getToken() {
   try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
@@ -86,12 +87,156 @@ function currentTab() {
   return data.tabs.find((t) => t.id === $("#platform").value);
 }
 
-function fillPlatforms() {
-  const data = files[currentSection().file].data;
-  $("#platform").replaceChildren(...data.tabs.map((t) => new Option(t.label, t.id)));
+function sectionData() {
+  return files[currentSection().file].data;
+}
+function isProjects() {
+  return sectionData().type === "projects";
+}
+
+// Show the fields that fit the selected section: one link per clip, or one link per platform.
+function setupForm() {
+  const data = sectionData();
+  const projects = data.type === "projects";
+  $("#clip-fields").hidden = projects;
+  $("#project-fields").hidden = !projects;
+  $("#url").required = !projects;
+  if (projects) {
+    $("#post-rows").replaceChildren(...data.platforms.map((p) => {
+      const row = Object.assign(document.createElement("div"), { className: "post-row" });
+      row.dataset.platform = p.id;
+      row.append(
+        Object.assign(document.createElement("span"), { textContent: p.label }),
+        Object.assign(document.createElement("input"), { type: "url", className: "post-url", placeholder: `${p.label} link` }),
+        Object.assign(document.createElement("input"), { type: "number", min: 0, step: 1, className: "post-views", placeholder: "Views" }),
+      );
+      return row;
+    }));
+  } else {
+    $("#platform").replaceChildren(...data.tabs.map((t) => new Option(t.label, t.id)));
+  }
+  cancelEdit();
+}
+
+function cancelEdit() {
+  editingId = null;
+  const projects = isProjects();
+  $("#form-title").textContent = projects ? "Add a project" : "Add a clip";
+  $("#submit").textContent = projects ? "Save project" : "Save clip";
+  $("#cancel-edit").hidden = true;
+  for (const input of document.querySelectorAll("#post-rows input")) input.value = "";
+  $("#title").value = $("#title-hint").textContent = autoTitle = "";
+  $("#date").value = new Date().toISOString().slice(0, 10);
+}
+
+function startEdit(item) {
+  editingId = item.id;
+  $("#form-title").textContent = "Edit project";
+  $("#submit").textContent = "Save changes";
+  $("#cancel-edit").hidden = false;
+  $("#title").value = item.title || "";
+  $("#date").value = item.date || "";
+  $("#title-hint").textContent = autoTitle = "";
+  for (const row of document.querySelectorAll(".post-row")) {
+    const post = item.posts?.[row.dataset.platform];
+    row.querySelector(".post-url").value = post?.url || "";
+    row.querySelector(".post-views").value = post?.views ?? "";
+  }
+  $("#add-form").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function projectTotal(item) {
+  return Object.values(item.posts || {}).reduce((sum, p) => sum + (Number(p.views) || 0), 0);
+}
+
+function renderProjectList() {
+  $("#save-list").hidden = true;
+  const data = sectionData();
+  $("#list-title").textContent = `Projects (${data.items.length})`;
+  $("#list-hint").textContent = "Click Edit to change a project's links or update its view counts.";
+  const items = [...data.items].sort((a, b) => projectTotal(b) - projectTotal(a));
+  if (!items.length) {
+    $("#list").replaceChildren(Object.assign(document.createElement("p"), { className: "hint", textContent: "No projects here yet." }));
+    return;
+  }
+  $("#list").replaceChildren(...items.map((item) => {
+    const row = Object.assign(document.createElement("div"), { className: "clip project-row" });
+    const platforms = data.platforms.filter((p) => item.posts?.[p.id]?.url).map((p) => p.label);
+    const info = document.createElement("div");
+    info.append(
+      Object.assign(document.createElement("a"), { href: Object.values(item.posts || {})[0]?.url || "#", target: "_blank", rel: "noopener", textContent: item.title || "Untitled" }),
+      Object.assign(document.createElement("small"), { textContent: [item.date, platforms.join(", "), `${projectTotal(item).toLocaleString("en-GB")} views`].filter(Boolean).join(" · ") }),
+    );
+
+    const edit = Object.assign(document.createElement("button"), { className: "edit", type: "button", textContent: "Edit" });
+    edit.addEventListener("click", () => startEdit(item));
+
+    // Removing takes two clicks so a stray tap doesn't delete a project.
+    const remove = Object.assign(document.createElement("button"), { className: "remove", type: "button", textContent: "Remove" });
+    remove.addEventListener("click", () => {
+      if (!remove.classList.contains("confirm")) {
+        remove.classList.add("confirm");
+        remove.textContent = "Click to confirm";
+        return;
+      }
+      removeProject(item.id, item.title);
+    });
+
+    row.append(info, edit, remove);
+    return row;
+  }));
+}
+
+async function removeProject(id, title) {
+  status("Removing…");
+  try {
+    const section = currentSection();
+    await readFile(section.file);
+    const data = files[section.file].data;
+    data.items = data.items.filter((i) => i.id !== id);
+    await writeFile(section.file, `Remove project: ${title}`);
+    if (editingId === id) cancelEdit();
+    status(`Removed "${title}". The site will update in a minute or two.`, "ok");
+    renderList();
+  } catch (err) {
+    status(err.message, "error");
+  }
+}
+
+async function saveProject() {
+  const section = currentSection();
+  const title = $("#title").value.trim();
+  const posts = {};
+  for (const row of document.querySelectorAll(".post-row")) {
+    const url = row.querySelector(".post-url").value.trim();
+    const views = row.querySelector(".post-views").value;
+    if (url) posts[row.dataset.platform] = { url, ...(views !== "" ? { views: Number(views) } : {}) };
+  }
+  if (!Object.keys(posts).length) throw new Error("Add at least one link.");
+
+  await readFile(section.file); // get the latest copy before changing it
+  const data = files[section.file].data;
+  const urls = Object.values(posts).map((p) => p.url);
+  const clash = data.items.find((i) => i.id !== editingId && Object.values(i.posts || {}).some((p) => urls.includes(p.url)));
+  if (clash) throw new Error(`One of these links is already used by "${clash.title}".`);
+
+  const item = { id: editingId || String(Date.now()), title, date: $("#date").value, posts };
+  if (editingId) {
+    const index = data.items.findIndex((i) => i.id === editingId);
+    if (index === -1) throw new Error("That project was removed somewhere else. Reload the page.");
+    data.items[index] = { ...data.items[index], ...item };
+  } else {
+    data.items.push(item);
+  }
+  await writeFile(section.file, `${editingId ? "Update" : "Add"} project: ${title}`);
+  status(`Saved "${title}". It will appear on the site in a minute or two.`, "ok");
+  cancelEdit();
+  renderList();
 }
 
 function renderList() {
+  if (isProjects()) return renderProjectList();
+  $("#list-hint").textContent = "Update view counts or remove clips here, then click Save changes.";
   pending = new Map();
   $("#save-list").hidden = true;
   const tab = currentTab();
@@ -136,6 +281,7 @@ async function onAdd(event) {
   button.disabled = true;
   status("Saving…");
   try {
+    if (isProjects()) return await saveProject();
     const section = currentSection();
     await readFile(section.file); // get the latest copy before changing it
     const tab = files[section.file].data.tabs.find((t) => t.id === $("#platform").value);
@@ -195,12 +341,11 @@ async function start() {
     sections = [];
     for (const s of site.sections) {
       const data = await readFile(s.file);
-      if (data.type === "videos") sections.push(s);
+      if (data.type === "videos" || data.type === "projects") sections.push(s);
     }
     $("#section").replaceChildren(...sections.map((s) => new Option(s.title, s.id)));
-    fillPlatforms();
+    setupForm();
     renderList();
-    $("#date").value = new Date().toISOString().slice(0, 10);
     $("#editor").hidden = false;
     status("");
   } catch (err) {
@@ -220,7 +365,8 @@ $("#disconnect").addEventListener("click", () => {
   setToken(null);
   location.reload();
 });
-$("#section").addEventListener("change", () => { fillPlatforms(); renderList(); });
+$("#section").addEventListener("change", () => { setupForm(); renderList(); });
+$("#cancel-edit").addEventListener("click", cancelEdit);
 $("#platform").addEventListener("change", renderList);
 // Public oEmbed endpoints that return a video's title. noembed.com is a fallback
 // for when a platform's own endpoint blocks requests from the browser.
@@ -232,7 +378,7 @@ const OEMBED = {
 let autoTitle = "";
 let titleTimer;
 
-async function fetchTitle(url) {
+async function fetchTitle(url, isCurrent) {
   const platform = detectPlatform(url);
   const hint = $("#title-hint");
   if (!OEMBED[platform]) {
@@ -247,7 +393,7 @@ async function fetchTitle(url) {
       if (!res.ok) continue;
       const data = await res.json();
       if (!data.title) continue;
-      if ($("#url").value.trim() !== url) return; // the link changed while we waited
+      if (!isCurrent()) return; // the link changed while we waited
       // Only overwrite the title if it's empty or was filled in automatically.
       const title = $("#title").value;
       if (!title || title === autoTitle) {
@@ -263,18 +409,28 @@ async function fetchTitle(url) {
 $("#url").addEventListener("input", () => {
   clearTimeout(titleTimer);
   const url = $("#url").value.trim();
-  if (/^https?:\/\/\S+\.\S+/.test(url)) titleTimer = setTimeout(() => fetchTitle(url), 400);
+  if (/^https?:\/\/\S+\.\S+/.test(url)) titleTimer = setTimeout(() => fetchTitle(url, () => $("#url").value.trim() === url), 400);
   else $("#title-hint").textContent = "";
+});
+
+// In a project, take the title from the first YouTube or TikTok link pasted.
+$("#post-rows").addEventListener("input", (event) => {
+  const input = event.target;
+  if (!input.classList.contains("post-url")) return;
+  const url = input.value.trim();
+  if (!OEMBED[detectPlatform(url)]) return;
+  clearTimeout(titleTimer);
+  titleTimer = setTimeout(() => fetchTitle(url, () => input.value.trim() === url), 400);
 });
 
 $("#url").addEventListener("input", () => {
   const platform = detectPlatform($("#url").value);
-  if (!platform) return;
+  if (!platform || isProjects()) return;
   // Pick the first section that has this platform, preferring the one already selected.
   const order = [currentSection(), ...sections.filter((s) => s !== currentSection())];
-  const match = order.find((s) => files[s.file].data.tabs.some((t) => t.id === platform));
+  const match = order.find((s) => (files[s.file].data.tabs || []).some((t) => t.id === platform));
   if (!match) return;
-  if (match !== currentSection()) { $("#section").value = match.id; fillPlatforms(); }
+  if (match !== currentSection()) { $("#section").value = match.id; setupForm(); }
   if ($("#platform").value !== platform) { $("#platform").value = platform; renderList(); }
 });
 $("#add-form").addEventListener("submit", onAdd);

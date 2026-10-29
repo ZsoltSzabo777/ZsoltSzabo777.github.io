@@ -35,19 +35,31 @@
 
     <section id="editor" hidden>
       <form id="add-form" class="panel">
-        <h2>Add a clip</h2>
-        <label>Link to the video <input id="url" type="url" required placeholder="https://www.instagram.com/reel/…"></label>
-        <div class="two">
-          <label>Section <select id="section"></select></label>
-          <label>Platform <select id="platform"></select></label>
+        <h2 id="form-title">Add a clip</h2>
+        <label>Section <select id="section"></select></label>
+
+        <!-- Sections with one link per clip -->
+        <div id="clip-fields">
+          <label>Link to the video <input id="url" type="url" required placeholder="https://www.youtube.com/shorts/…"></label>
+          <div class="two">
+            <label>Platform <select id="platform"></select></label>
+            <label>Views <input id="views" type="number" min="0" step="1" placeholder="1250000"></label>
+          </div>
         </div>
+
+        <!-- Sections where one video goes out on several platforms -->
+        <div id="project-fields" hidden>
+          <p class="hint">Paste the link and views for each platform this video went out on. Leave the rest empty.</p>
+          <div id="post-rows"></div>
+        </div>
+
         <label>Title <input id="title" required placeholder="Verstappen onboard, Suzuka"></label>
         <p id="title-hint" class="hint field-hint"></p>
-        <div class="two">
-          <label>Date posted <input id="date" type="date" required></label>
-          <label>Views <input id="views" type="number" min="0" step="1" placeholder="1250000"></label>
+        <label>Date posted <input id="date" type="date" required></label>
+        <div class="form-actions">
+          <button class="primary" type="submit" id="submit">Save clip</button>
+          <button class="link" type="button" id="cancel-edit" hidden>Cancel editing</button>
         </div>
-        <button class="primary" type="submit">Save clip</button>
       </form>
 
       <section class="panel">
@@ -55,7 +67,7 @@
           <h2 id="list-title">Clips</h2>
           <button id="save-list" class="primary" hidden>Save changes</button>
         </div>
-        <p class="hint">Update view counts or remove clips here, then click Save changes.</p>
+        <p class="hint" id="list-hint">Update view counts or remove clips here, then click Save changes.</p>
         <div id="list"></div>
       </section>
 

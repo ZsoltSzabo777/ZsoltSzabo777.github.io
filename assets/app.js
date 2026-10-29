@@ -8,6 +8,7 @@ const $ = (sel) => document.querySelector(sel);
 function el(tag, attrs = {}, children = []) {
   const node = document.createElement(tag);
   for (const [key, value] of Object.entries(attrs)) {
+    if (value == null) continue;
     if (key === "class") node.className = value;
     else if (key === "text") node.textContent = value;
     else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
@@ -102,6 +103,100 @@ function pillGroup(options, active, onPick, label) {
   );
 }
 
+function sectionHead(data) {
+  return el("div", { class: "section-head" }, [
+    el("div", {}, [
+      data.eyebrow ? el("p", { class: "eyebrow", text: data.eyebrow }) : null,
+      el("h2", {}, highlight(data.title)),
+    ]),
+    data.intro ? el("p", { class: "section-intro", text: data.intro }) : null,
+  ]);
+}
+
+function sortControl(id, sort) {
+  return el("div", { class: "sort" }, [
+    el("span", { class: "control-label", text: "Sort by" }),
+    pillGroup([["views", "Most viewed"], ["recent", "Most recent"]], sort, (v) => { state.sort[id] = v; render(); }, "Sort"),
+  ]);
+}
+
+// A project is one video posted to several platforms, each with its own link and views.
+function projectPosts(item, platforms) {
+  return platforms
+    .filter((p) => item.posts?.[p.id]?.url)
+    .map((p) => ({ id: p.id, label: p.label, url: item.posts[p.id].url, views: Number(item.posts[p.id].views) || 0 }));
+}
+
+function projectViews(item, platforms, focus) {
+  const posts = projectPosts(item, platforms);
+  return focus ? posts.find((p) => p.id === focus)?.views || 0 : posts.reduce((sum, p) => sum + p.views, 0);
+}
+
+function projectThumbnail(item, posts) {
+  if (item.thumbnail) return item.thumbnail;
+  for (const post of posts) {
+    const id = youtubeId(post.url);
+    if (id) return `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+  }
+  return null;
+}
+
+function projectCard(item, platforms, focus) {
+  const posts = projectPosts(item, platforms);
+  const main = posts.find((p) => p.id === focus) || posts[0];
+  const views = projectViews(item, platforms, focus);
+  const img = projectThumbnail(item, posts);
+  const thumb = el("a", {
+    class: "thumb" + (img ? " has-image" : ""), href: main.url, target: "_blank", rel: "noopener",
+    "aria-label": `Watch ${item.title || "this clip"} on ${main.label}`,
+  }, [
+    el("span", { class: "platform", text: posts.map((p) => p.label).join(" · ") }),
+    views ? el("span", { class: "badge", text: formatViews(views) }) : null,
+  ]);
+  if (img) thumb.style.backgroundImage = `url("${img}")`;
+  return el("article", { class: "card project" }, [
+    thumb,
+    el("div", { class: "card-body" }, [
+      el("h3", { text: item.title || "Untitled" }),
+      el("div", { class: "meta", text: formatDate(item.date) }),
+      el("ul", { class: "post-links" }, posts.map((p) =>
+        el("li", { class: p.id === focus ? "active" : "" }, [
+          el("a", { href: p.url, target: "_blank", rel: "noopener" }, [
+            el("span", { text: p.label }),
+            el("b", { text: p.views ? compact(p.views) : "–" }),
+          ]),
+        ])
+      )),
+    ]),
+  ]);
+}
+
+function renderProjects(id, data) {
+  const platforms = data.platforms || [];
+  const items = (data.items || []).filter((i) => projectPosts(i, platforms).length);
+  const head = sectionHead(data);
+  if (!items.length) return [head, el("div", { class: "empty", text: "New clips coming soon." })];
+
+  // Platform filter: "All platforms" totals every post, a single platform shows only its own views.
+  const used = platforms.filter((p) => items.some((i) => i.posts?.[p.id]?.url));
+  const focus = used.some((p) => p.id === state.tab[id]) ? state.tab[id] : "";
+  const sort = state.sort[id] || data.defaultSort || "views";
+  const controls = el("div", { class: "controls" }, [
+    used.length > 1
+      ? pillGroup([["", "All platforms"], ...used.map((p) => [p.id, p.label])], focus, (v) => { state.tab[id] = v; render(); }, "Platform")
+      : el("span"),
+    sortControl(id, sort),
+  ]);
+
+  const shown = (focus ? items.filter((i) => i.posts?.[focus]?.url) : items)
+    .map((item) => ({ item, views: projectViews(item, platforms, focus) }));
+  if (sort === "views") shown.sort((a, b) => b.views - a.views);
+  else shown.sort((a, b) => String(b.item.date || "").localeCompare(String(a.item.date || "")));
+
+  const label = focus ? used.find((p) => p.id === focus).label : "All projects";
+  return [head, controls, carousel(label, shown.map(({ item }) => projectCard(item, platforms, focus)), data.layout === "vertical")];
+}
+
 function renderVideos(id, data) {
   const tabs = data.tabs || [];
   const tabId = state.tab[id] || tabs[0]?.id;
@@ -109,13 +204,7 @@ function renderVideos(id, data) {
   const tab = tabs.find((t) => t.id === tabId) || tabs[0];
 
   const rerender = () => render();
-  const head = el("div", { class: "section-head" }, [
-    el("div", {}, [
-      data.eyebrow ? el("p", { class: "eyebrow", text: data.eyebrow }) : null,
-      el("h2", {}, highlight(data.title)),
-    ]),
-    data.intro ? el("p", { class: "section-intro", text: data.intro }) : null,
-  ]);
+  const head = sectionHead(data);
   const stacked = data.display === "stacked";
   const controls = el("div", { class: "controls" }, [
     stacked
@@ -125,7 +214,7 @@ function renderVideos(id, data) {
       : tabs.length > 1
         ? pillGroup(tabs.map((t) => [t.id, t.label]), tab?.id, (v) => { state.tab[id] = v; rerender(); }, "Platform")
         : el("span"),
-    el("div", { class: "sort" }, [el("span", { class: "control-label", text: "Sort by" }), pillGroup([["views", "Most viewed"], ["recent", "Most recent"]], sort, (v) => { state.sort[id] = v; rerender(); }, "Sort")]),
+    sortControl(id, sort),
   ]);
 
   if (stacked) {
@@ -143,7 +232,7 @@ function videoGrid(tab, items) {
     : el("div", { class: "empty", text: "New clips coming soon." });
 }
 
-// One platform shown as a horizontal row that scrolls with the arrows or by swiping.
+// One platform shown as its own row.
 function platformRow(tab, sort, anchor) {
   const items = sortItems(tab.items || [], sort);
   if (!items.length) {
@@ -153,10 +242,15 @@ function platformRow(tab, sort, anchor) {
     ]);
   }
 
-  const row = el("div", { class: "row" + (tab.layout === "vertical" ? " vertical" : "") }, items.map(videoCard));
+  return carousel(tab.label, items.map(videoCard), tab.layout === "vertical", anchor);
+}
+
+// A horizontal row of cards that scrolls with the arrows or by swiping.
+function carousel(label, cards, vertical, anchor) {
+  const row = el("div", { class: "row" + (vertical ? " vertical" : "") }, cards);
   const scroll = (dir) => row.scrollBy({ left: dir * row.clientWidth * 0.9, behavior: "smooth" });
-  const prev = el("button", { class: "arrow", "aria-label": `Previous ${tab.label} clips`, text: "←", onclick: () => scroll(-1) });
-  const next = el("button", { class: "arrow", "aria-label": `Next ${tab.label} clips`, text: "→", onclick: () => scroll(1) });
+  const prev = el("button", { class: "arrow", "aria-label": `Previous ${label} clips`, text: "←", onclick: () => scroll(-1) });
+  const next = el("button", { class: "arrow", "aria-label": `Next ${label} clips`, text: "→", onclick: () => scroll(1) });
 
   const updateArrows = () => {
     prev.disabled = row.scrollLeft <= 4;
@@ -168,7 +262,7 @@ function platformRow(tab, sort, anchor) {
 
   return el("section", { class: "platform-block", id: anchor }, [
     el("div", { class: "platform-head" }, [
-      el("h3", {}, [tab.label, el("span", { class: "count", text: String(items.length) })]),
+      el("h3", {}, [label, el("span", { class: "count", text: String(cards.length) })]),
       el("div", { class: "arrows" }, [prev, next]),
     ]),
     row,
@@ -213,7 +307,8 @@ async function render() {
       state.sections[id] = await loadJSON(meta.file);
     }
     const data = state.sections[id];
-    main.replaceChildren(...(data.type === "text" ? renderText(data) : renderVideos(id, data)));
+    const view = { text: renderText, projects: (d) => renderProjects(id, d) }[data.type] || ((d) => renderVideos(id, d));
+    main.replaceChildren(...view(data));
   } catch (err) {
     main.replaceChildren(el("div", { class: "empty", text: err.message }));
   }
@@ -244,9 +339,25 @@ async function allClips() {
       state.sections[meta.id] ||= await loadJSON(meta.file);
     } catch { continue; }
     const data = state.sections[meta.id];
+    const section = data.title.replace(/\*/g, "");
+    if (data.type === "projects") {
+      for (const item of data.items || []) {
+        const posts = projectPosts(item, data.platforms || []);
+        if (!posts.length) continue;
+        clips.push({
+          ...item, sectionId: meta.id, section, posts,
+          url: posts[0].url,
+          thumbnail: projectThumbnail(item, posts),
+          views: posts.reduce((sum, p) => sum + p.views, 0),
+          platform: posts.map((p) => p.label).join(" · "),
+          vertical: data.layout === "vertical",
+        });
+      }
+      continue;
+    }
     if (data.type !== "videos") continue;
     for (const tab of data.tabs || []) {
-      for (const item of tab.items || []) clips.push({ ...item, sectionId: meta.id, section: data.title.replace(/\*/g, ""), platform: tab.label });
+      for (const item of tab.items || []) clips.push({ ...item, sectionId: meta.id, section, platform: tab.label });
     }
   }
   return clips;
@@ -288,7 +399,7 @@ async function renderShowcase() {
 
   const slides = featured.map((clip, i) => {
     const img = thumbnailFor(clip);
-    const vertical = /\/shorts\/|tiktok|instagram/.test(clip.url);
+    const vertical = clip.vertical ?? /\/shorts\/|tiktok|instagram/.test(clip.url);
     const backdrop = el("div", { class: "slide-backdrop" });
     const poster = el("a", { class: "slide-poster" + (vertical ? " is-vertical" : ""), href: clip.url, target: "_blank", rel: "noopener", "aria-label": `Watch ${clip.title}` },
       [img ? null : el("span", { text: clip.platform })]);
@@ -301,9 +412,16 @@ async function renderShowcase() {
           el("h2", { text: clip.title }),
           el("dl", { class: "slide-stats" }, [
             clip.views ? el("div", {}, [el("dt", { text: "Views" }), el("dd", { text: compact(clip.views) })]) : null,
-            el("div", {}, [el("dt", { text: "Platform" }), el("dd", { text: clip.platform })]),
+            clip.posts
+              ? el("div", {}, [el("dt", { text: "Platforms" }), el("dd", { text: String(clip.posts.length) })])
+              : el("div", {}, [el("dt", { text: "Platform" }), el("dd", { text: clip.platform })]),
             clip.date ? el("div", {}, [el("dt", { text: "Posted" }), el("dd", { text: formatDate(clip.date) })]) : null,
           ]),
+          clip.posts?.length > 1
+            ? el("div", { class: "stat-links slide-links" }, clip.posts.map((p) =>
+                el("a", { href: p.url, target: "_blank", rel: "noopener" }, [el("span", { text: p.label }), p.views ? el("b", { text: compact(p.views) }) : null])
+              ))
+            : null,
           el("a", { class: "cta", href: clip.url, target: "_blank", rel: "noopener", text: "Watch now →" }),
         ]),
         poster,

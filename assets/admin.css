@@ -45,3 +45,16 @@ button.link { background: none; border: 0; color: var(--muted); text-decoration:
   .clip .remove { grid-column: 1 / -1; justify-self: start; }
 }
 .field-hint { margin: -8px 0 14px; min-height: 1em; font-size: 13px; }
+.post-row { display: grid; grid-template-columns: 92px 1fr 130px; gap: 10px; align-items: center; margin-bottom: 10px; }
+.post-row span { font-size: 14px; font-weight: 600; }
+.post-row input { margin: 0; }
+.form-actions { display: flex; align-items: center; gap: 18px; }
+.clip.project-row { grid-template-columns: 1fr auto auto; }
+.clip .edit { background: none; border: 1px solid var(--surface-2); color: var(--text); border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+.clip .edit:hover { border-color: var(--muted); }
+.clip .remove.confirm { background: var(--accent-2); border-color: var(--accent-2); color: #fff; }
+@media (max-width: 520px) {
+  .post-row { grid-template-columns: 1fr 110px; }
+  .post-row span { grid-column: 1 / -1; }
+  .clip.project-row { grid-template-columns: 1fr auto; }
+}

@@ -267,3 +267,21 @@ main { padding: 0 var(--gutter) 96px; min-height: 50vh; }
 .stat-links a b { font-weight: 700; }
 .stat-links a::after { content: "↗"; opacity: 0.7; }
 .stat-links a:hover { background: #fff; color: var(--accent-2); }
+
+/* Project card: one video with a link and views per platform */
+.card.project .thumb { text-decoration: none; }
+.post-links { list-style: none; margin: 10px 0 0; padding: 8px 0 0; border-top: 1px solid var(--surface-2); }
+.post-links a {
+  display: flex; justify-content: space-between; gap: 8px; padding: 4px 0;
+  text-decoration: none; font-size: 13px; color: var(--muted); transition: color 0.15s;
+}
+.post-links a::after { content: "↗"; margin-left: 2px; opacity: 0.6; }
+.post-links span { flex: 1; }
+.post-links b { font-weight: 600; color: var(--text); }
+.post-links a:hover, .post-links a:hover b { color: var(--accent-2); }
+.post-links li.active a { color: var(--accent-2); }
+.post-links li.active b { color: var(--accent-2); }
+.slide-links { margin: -8px 0 28px; border-top: 0; padding-top: 0; }
+.controls .pill-group { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.controls .pill-group::-webkit-scrollbar { display: none; }
+.pill-group button { flex: none; white-space: nowrap; }

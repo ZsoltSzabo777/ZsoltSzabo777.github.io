@@ -24,6 +24,24 @@ To edit by hand instead, open the section's file (for example `content/red-bull.
 - YouTube thumbnails appear automatically. For Instagram, Facebook or TikTok you can add `"thumbnail": "<image link>"`.
 - Separate entries with a comma.
 
+## Projects (one video on several platforms)
+
+`content/red-bull.json` uses `"type": "projects"`: each item is one video with a link and view count per platform, and the site adds the views up.
+
+```json
+{
+  "id": "1793285524257",
+  "title": "sideways is the way",
+  "date": "2026-10-29",
+  "posts": {
+    "instagram": { "url": "https://www.instagram.com/reel/…", "views": 900000 },
+    "youtube": { "url": "https://www.youtube.com/shorts/…", "views": 121000 }
+  }
+}
+```
+
+The platforms a project can use are listed under `platforms` in the same file. The site editor handles all of this for you.
+
 ## Add a section
 
 1. Copy `content/red-bull.json` to a new file, such as `content/company-x.json`, and change the title and tabs.
