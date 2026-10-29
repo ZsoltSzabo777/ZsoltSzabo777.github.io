@@ -1,9 +1,9 @@
 .admin { max-width: 720px; margin: 0 auto; padding: 32px 16px 80px; }
 .panel { background: var(--surface); border-radius: var(--radius); padding: 24px; margin-bottom: 24px; }
-.panel h2 { margin: 0 0 16px; font: 800 28px/1 "Barlow Condensed", sans-serif; text-transform: uppercase; }
+.panel h2 { margin: 0 0 16px; font-size: 22px; font-weight: 500; letter-spacing: -0.02em; }
 .panel ol { padding-left: 20px; color: var(--muted); }
 .panel ol b { color: var(--text); }
-.panel a { color: var(--accent-2); }
+.panel a { color: var(--text); text-decoration: underline; }
 
 label { display: block; margin-bottom: 14px; font-size: 14px; font-weight: 500; color: var(--muted); }
 input, select {
@@ -15,7 +15,7 @@ input:focus, select:focus { outline: 2px solid var(--accent); border-color: tran
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
 button.primary {
-  border: 0; background: var(--accent); color: #fff; cursor: pointer;
+  border: 0; background: var(--accent); color: var(--on-accent); cursor: pointer;
   padding: 12px 22px; border-radius: 999px; font: 600 15px Inter, sans-serif;
 }
 button.primary:disabled { opacity: 0.5; cursor: wait; }
@@ -35,7 +35,7 @@ button.link { background: none; border: 0; color: var(--muted); text-decoration:
 .clip small { display: block; color: var(--muted); }
 .clip input { margin: 0; padding: 8px; }
 .clip .remove { background: none; border: 1px solid var(--surface-2); color: var(--muted); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
-.clip .remove:hover { color: #fff; border-color: var(--accent); }
+.clip .remove:hover { color: var(--text); border-color: var(--muted); }
 .clip.removed { opacity: 0.35; }
 .clip.removed a { text-decoration: line-through; }
 

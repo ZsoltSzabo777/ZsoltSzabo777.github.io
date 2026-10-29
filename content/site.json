@@ -1,10 +1,22 @@
 {
   "name": "Zsolt Szabo",
-  "tagline": "Video Editor · Red Bull Motorsports",
-  "headline": "Edits built for speed",
+  "tagline": "Video editor, Red Bull Motorsports",
+  "headline": "Short-form motorsport edits for Red Bull and beyond.",
   "sections": [
-    { "id": "red-bull", "title": "Red Bull Motorsports", "file": "content/red-bull.json" },
-    { "id": "my-channels", "title": "My Channels", "file": "content/my-channels.json" },
-    { "id": "about", "title": "About me", "file": "content/about.json" }
+    {
+      "id": "red-bull",
+      "title": "Red Bull Motorsports",
+      "file": "content/red-bull.json"
+    },
+    {
+      "id": "my-channels",
+      "title": "My Channels",
+      "file": "content/my-channels.json"
+    },
+    {
+      "id": "about",
+      "title": "About me",
+      "file": "content/about.json"
+    }
   ]
 }

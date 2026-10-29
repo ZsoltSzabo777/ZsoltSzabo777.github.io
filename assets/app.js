@@ -71,7 +71,8 @@ function videoCard(item) {
     item.views ? el("span", { class: "badge", text: formatViews(item.views) }) : null,
   ]);
   if (img) thumb.style.backgroundImage = `url("${img}")`;
-  return el("a", { class: "card", href: item.url, target: "_blank", rel: "noopener" }, [
+  const vertical = /\/shorts\//.test(item.url);
+  return el("a", { class: "card" + (vertical ? " is-vertical" : ""), href: item.url, target: "_blank", rel: "noopener" }, [
     thumb,
     el("div", { class: "card-body" }, [
       el("h3", { text: item.title || "Untitled" }),
@@ -113,7 +114,10 @@ function renderVideos(id, data) {
   ]);
 
   if (stacked) {
-    return [head, controls, ...tabs.map((t) => platformRow(t, sort))];
+    // Platforms without clips yet stay hidden on the public site.
+    const filled = tabs.filter((t) => t.items?.length);
+    if (!filled.length) return [head, el("div", { class: "empty", text: "New clips coming soon." })];
+    return [head, controls, ...filled.map((t) => platformRow(t, sort))];
   }
   return [head, controls, videoGrid(tab, sortItems(tab?.items || [], sort))];
 }
@@ -149,7 +153,7 @@ function platformRow(tab, sort) {
 
   return el("section", { class: "platform-block" }, [
     el("div", { class: "platform-head" }, [
-      el("h3", { text: tab.label }),
+      el("h3", {}, [tab.label, el("span", { class: "count", text: String(items.length) })]),
       el("div", { class: "arrows" }, [prev, next]),
     ]),
     row,
