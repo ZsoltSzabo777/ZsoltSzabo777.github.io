@@ -39,5 +39,6 @@
   "viewsFrom": [
     "my-channels"
   ],
-  "viewsLabel": "Views on my own videos"
+  "viewsLabel": "Views on my own videos",
+  "hideHeadline": true
 }

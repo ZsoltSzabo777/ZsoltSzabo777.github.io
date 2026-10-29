@@ -321,6 +321,7 @@ async function render() {
       state.sections[id] = await loadJSON(meta.file);
     }
     const data = state.sections[id];
+    $("#intro-text").hidden = !!data.hideHeadline;
     renderStats(data);
     const view = { text: renderText, projects: (d) => renderProjects(id, d) }[data.type] || ((d) => renderVideos(id, d));
     main.replaceChildren(...view(data));
