@@ -8,7 +8,14 @@
       "id": "instagram",
       "label": "Instagram",
       "layout": "vertical",
-      "items": []
+      "items": [
+        {
+          "title": "sideways is the way 😏",
+          "url": "https://www.instagram.com/reel/De-WLAAEoFT/",
+          "date": "2026-10-27",
+          "views": 160000
+        }
+      ]
     },
     {
       "id": "facebook",
