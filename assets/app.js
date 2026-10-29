@@ -246,7 +246,7 @@ async function allClips() {
     const data = state.sections[meta.id];
     if (data.type !== "videos") continue;
     for (const tab of data.tabs || []) {
-      for (const item of tab.items || []) clips.push({ ...item, section: data.title.replace(/\*/g, ""), platform: tab.label });
+      for (const item of tab.items || []) clips.push({ ...item, sectionId: meta.id, section: data.title.replace(/\*/g, ""), platform: tab.label });
     }
   }
   return clips;
@@ -258,14 +258,21 @@ function compact(n) {
 
 async function renderShowcase() {
   const clips = await allClips();
-  const totalViews = clips.reduce((sum, c) => sum + (Number(c.views) || 0), 0);
+  // Total views counts every clip in the sections listed under viewsFrom (all sections if unset).
+  const { viewsFrom, viewsLabel } = state.site;
+  const counted = viewsFrom ? clips.filter((c) => viewsFrom.includes(c.sectionId)) : clips;
+  const totalViews = counted.reduce((sum, c) => sum + (Number(c.views) || 0), 0);
   const stats = [
     ...(state.site.stats || []),
-    ...(totalViews ? [{ value: compact(totalViews) + "+", label: "Total views" }] : []),
+    ...(totalViews ? [{ value: compact(totalViews) + "+", label: viewsLabel || "Total views" }] : []),
   ];
-  $("#stats").replaceChildren(...stats.flatMap((s) => [
-    el("div", { class: "stat" }, [el("dt", { text: s.label }), el("dd", { text: s.value })]),
-  ]));
+  $("#stats").replaceChildren(...stats.map((s) =>
+    el("div", { class: "stat" }, [
+      s.detail ? el("small", { text: s.detail }) : null,
+      el("dt", { text: s.label }),
+      el("dd", { text: s.value }),
+    ])
+  ));
 
   const featured = [...clips].sort((a, b) => (Number(b.views) || 0) - (Number(a.views) || 0)).slice(0, state.site.featuredCount || 4);
   if (!featured.length) return;
@@ -324,7 +331,7 @@ async function renderShowcase() {
       ])
     : null;
 
-  root.replaceChildren(el("div", { class: "slides" }, slides), nav);
+  root.replaceChildren(...[el("div", { class: "slides" }, slides), nav].filter(Boolean));
   go(0);
 }
 

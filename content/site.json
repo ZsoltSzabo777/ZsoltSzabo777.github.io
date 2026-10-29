@@ -1,7 +1,7 @@
 {
   "name": "Zsolt Szabo",
-  "tagline": "Video editor, Red Bull Motorsports",
-  "headline": "Short-form *motorsport* edits for Red Bull and beyond.",
+  "tagline": "Full-time social media editor at Red Bull Motorsports",
+  "headline": "Short-form *motorsport* edits for Red Bull Motorsports.",
   "sections": [
     {
       "id": "red-bull",
@@ -21,9 +21,14 @@
   ],
   "stats": [
     {
-      "value": "180K+",
-      "label": "Followers on my channels"
+      "value": "7.5M+",
+      "label": "Red Bull Motorsports followers",
+      "detail": "Instagram 4.5M · YouTube 3.1M"
     }
   ],
-  "featuredCount": 4
+  "featuredCount": 4,
+  "viewsFrom": [
+    "red-bull"
+  ],
+  "viewsLabel": "Views on my Red Bull edits"
 }
