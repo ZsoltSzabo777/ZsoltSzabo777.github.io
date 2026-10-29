@@ -6,11 +6,12 @@
     "I'm a full-time social media editor for Red Bull, cutting daily content for the Red Bull Motorsports channels.",
     "Before that I built my own audience on TikTok and YouTube, growing to around 180K followers combined."
   ],
-  "stats": [
-    {
-      "value": "180K+",
-      "label": "followers across my own channels"
-    }
-  ],
-  "links": []
+  "links": [],
+  "hideStats": true,
+  "profile": {
+    "name": "Zsolt Szabó",
+    "headline": "Social media editor at Red Bull Motorsports",
+    "url": "https://www.linkedin.com/in/zsolt-szab%C3%B3-24b98b364/",
+    "photo": ""
+  }
 }

@@ -269,15 +269,29 @@ function carousel(label, cards, vertical, anchor) {
   ]);
 }
 
-function renderText(data) {
-  const side = el("aside", { class: "about-side" }, [
-    ...(data.stats || []).flatMap((s) => [
-      el("div", { class: "stat", text: s.value }),
-      el("div", { class: "stat-label", text: s.label }),
+function profileCard(profile) {
+  const initials = profile.name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2);
+  const avatar = profile.photo
+    ? el("img", { class: "avatar", src: profile.photo, alt: profile.name })
+    : el("span", { class: "avatar", "aria-hidden": "true", text: initials });
+  return el("a", { class: "profile-card", href: profile.url, target: "_blank", rel: "noopener" }, [
+    avatar,
+    el("div", { class: "profile-text" }, [
+      el("strong", { text: profile.name }),
+      profile.headline ? el("span", { text: profile.headline }) : null,
     ]),
-    data.links?.length ? el("h3", { text: "Find me" }) : null,
-    ...(data.links || []).map((l) => el("a", { href: l.url, target: "_blank", rel: "noopener", text: l.label + " ↗" })),
+    el("span", { class: "profile-cta" }, [el("span", { class: "li-mark", text: "in" }), `View on ${profile.network || "LinkedIn"} ↗`]),
   ]);
+}
+
+function renderText(data) {
+  const links = data.links?.length
+    ? el("aside", { class: "about-side" }, [
+        el("h3", { text: "Find me" }),
+        ...data.links.map((l) => el("a", { href: l.url, target: "_blank", rel: "noopener", text: l.label + " ↗" })),
+      ])
+    : null;
+  const side = el("div", { class: "about-aside" }, [data.profile ? profileCard(data.profile) : null, links]);
   return [
     el("div", { class: "section-head" }, [el("div", {}, [
       data.eyebrow ? el("p", { class: "eyebrow", text: data.eyebrow }) : null,
@@ -307,6 +321,7 @@ async function render() {
       state.sections[id] = await loadJSON(meta.file);
     }
     const data = state.sections[id];
+    $("#stats").hidden = !!data.hideStats;
     const view = { text: renderText, projects: (d) => renderProjects(id, d) }[data.type] || ((d) => renderVideos(id, d));
     main.replaceChildren(...view(data));
   } catch (err) {
