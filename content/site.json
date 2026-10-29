@@ -21,14 +21,35 @@
   ],
   "stats": [
     {
-      "value": "7.5M+",
+      "value": "19.8M+",
       "label": "Red Bull Motorsports followers",
-      "detail": "Instagram 4.5M · YouTube 3.1M"
+      "links": [
+        {
+          "label": "Instagram",
+          "value": "4.4M",
+          "url": "https://www.instagram.com/redbullmotorsports/"
+        },
+        {
+          "label": "YouTube",
+          "value": "3.4M",
+          "url": "https://www.youtube.com/RedBullMotorsports"
+        },
+        {
+          "label": "TikTok",
+          "value": "4.7M",
+          "url": "https://www.tiktok.com/@redbullmotorsports"
+        },
+        {
+          "label": "Facebook",
+          "value": "7.3M",
+          "url": "https://www.facebook.com/RedBullMotorsports/"
+        }
+      ]
     }
   ],
   "featuredCount": 4,
   "viewsFrom": [
     "red-bull"
   ],
-  "viewsLabel": "Views on my Red Bull edits"
+  "viewsLabel": "Views on the projects I've worked on"
 }

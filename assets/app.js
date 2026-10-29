@@ -268,7 +268,11 @@ async function renderShowcase() {
   ];
   $("#stats").replaceChildren(...stats.map((s) =>
     el("div", { class: "stat" }, [
-      s.detail ? el("small", { text: s.detail }) : null,
+      s.links?.length
+        ? el("div", { class: "stat-links" }, s.links.map((l) =>
+            el("a", { href: l.url, target: "_blank", rel: "noopener" }, [el("span", { text: l.label }), el("b", { text: l.value })])
+          ))
+        : null,
       el("dt", { text: s.label }),
       el("dd", { text: s.value }),
     ])
