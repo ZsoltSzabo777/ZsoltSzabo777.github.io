@@ -18,5 +18,27 @@
       "items": []
     }
   ],
-  "display": "stacked"
+  "display": "stacked",
+  "stats": [
+    {
+      "value": "185K+",
+      "label": "Followers on my channels",
+      "links": [
+        {
+          "label": "YouTube",
+          "value": "27.6K",
+          "url": ""
+        },
+        {
+          "label": "TikTok",
+          "value": "157.8K",
+          "url": ""
+        }
+      ]
+    }
+  ],
+  "viewsFrom": [
+    "my-channels"
+  ],
+  "viewsLabel": "Views on my own videos"
 }

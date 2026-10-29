@@ -321,7 +321,7 @@ async function render() {
       state.sections[id] = await loadJSON(meta.file);
     }
     const data = state.sections[id];
-    $("#stats").hidden = !!data.hideStats;
+    renderStats(data);
     const view = { text: renderText, projects: (d) => renderProjects(id, d) }[data.type] || ((d) => renderVideos(id, d));
     main.replaceChildren(...view(data));
   } catch (err) {
@@ -382,27 +382,38 @@ function compact(n) {
   return formatViews(n).replace(" views", "");
 }
 
-async function renderShowcase() {
-  const clips = await allClips();
+// The stat cards under the headline. A section can set its own stats, viewsFrom and
+// viewsLabel; otherwise the ones in site.json are used.
+async function renderStats(data) {
+  const box = $("#stats");
+  box.hidden = !!data.hideStats;
+  if (data.hideStats) return;
+  const clips = await (state.clips ||= allClips());
+  const pick = (key) => data[key] ?? state.site[key];
+  const viewsFrom = pick("viewsFrom");
   // Total views counts every clip in the sections listed under viewsFrom (all sections if unset).
-  const { viewsFrom, viewsLabel } = state.site;
   const counted = viewsFrom ? clips.filter((c) => viewsFrom.includes(c.sectionId)) : clips;
   const totalViews = counted.reduce((sum, c) => sum + (Number(c.views) || 0), 0);
   const stats = [
-    ...(state.site.stats || []),
-    ...(totalViews ? [{ value: compact(totalViews) + "+", label: viewsLabel || "Total views" }] : []),
+    ...(pick("stats") || []),
+    ...(totalViews ? [{ value: compact(totalViews) + "+", label: pick("viewsLabel") || "Total views" }] : []),
   ];
-  $("#stats").replaceChildren(...stats.map((s) =>
+  box.replaceChildren(...stats.map((s) =>
     el("div", { class: "stat" }, [
       s.links?.length
-        ? el("div", { class: "stat-links" }, s.links.map((l) =>
-            el("a", { href: l.url, target: "_blank", rel: "noopener" }, [el("span", { text: l.label }), el("b", { text: l.value })])
-          ))
+        ? el("div", { class: "stat-links" }, s.links.map((l) => {
+            const parts = [el("span", { text: l.label }), el("b", { text: l.value })];
+            return l.url ? el("a", { href: l.url, target: "_blank", rel: "noopener" }, parts) : el("span", { class: "no-link" }, parts);
+          }))
         : null,
       el("dt", { text: s.label }),
       el("dd", { text: s.value }),
     ])
   ));
+}
+
+async function renderShowcase() {
+  const clips = await (state.clips ||= allClips());
 
   const featured = [...clips].sort((a, b) => (Number(b.views) || 0) - (Number(a.views) || 0)).slice(0, state.site.featuredCount || 4);
   if (!featured.length) return;
