@@ -215,6 +215,99 @@ async function init() {
   );
   window.addEventListener("hashchange", render);
   render();
+  renderShowcase();
+}
+
+// Load every video section once, for the featured slider and the stats strip.
+async function allClips() {
+  const clips = [];
+  for (const meta of state.site.sections) {
+    try {
+      state.sections[meta.id] ||= await loadJSON(meta.file);
+    } catch { continue; }
+    const data = state.sections[meta.id];
+    if (data.type !== "videos") continue;
+    for (const tab of data.tabs || []) {
+      for (const item of tab.items || []) clips.push({ ...item, section: data.title, platform: tab.label });
+    }
+  }
+  return clips;
+}
+
+function compact(n) {
+  return formatViews(n).replace(" views", "");
+}
+
+async function renderShowcase() {
+  const clips = await allClips();
+  const totalViews = clips.reduce((sum, c) => sum + (Number(c.views) || 0), 0);
+  const stats = [
+    ...(state.site.stats || []),
+    ...(totalViews ? [{ value: compact(totalViews) + "+", label: "Total views" }] : []),
+  ];
+  $("#stats").replaceChildren(...stats.flatMap((s) => [
+    el("div", { class: "stat" }, [el("dt", { text: s.label }), el("dd", { text: s.value })]),
+  ]));
+
+  const featured = [...clips].sort((a, b) => (Number(b.views) || 0) - (Number(a.views) || 0)).slice(0, state.site.featuredCount || 4);
+  if (!featured.length) return;
+
+  const root = $("#showcase");
+  root.hidden = false;
+  let index = 0;
+  let timer;
+
+  const slides = featured.map((clip, i) => {
+    const img = thumbnailFor(clip);
+    const vertical = /\/shorts\/|tiktok|instagram/.test(clip.url);
+    const backdrop = el("div", { class: "slide-backdrop" });
+    const poster = el("a", { class: "slide-poster" + (vertical ? " is-vertical" : ""), href: clip.url, target: "_blank", rel: "noopener", "aria-label": `Watch ${clip.title}` },
+      [img ? null : el("span", { text: clip.platform })]);
+    if (img) backdrop.style.backgroundImage = poster.style.backgroundImage = `url("${img}")`;
+    return el("article", { class: "slide", "aria-hidden": String(i !== 0) }, [
+      backdrop,
+      el("div", { class: "slide-inner" }, [
+        el("div", { class: "slide-text" }, [
+          el("p", { class: "slide-label", text: `${clip.section} · ${clip.platform}` }),
+          el("h2", { text: clip.title }),
+          el("dl", { class: "slide-stats" }, [
+            clip.views ? el("div", {}, [el("dt", { text: "Views" }), el("dd", { text: compact(clip.views) })]) : null,
+            el("div", {}, [el("dt", { text: "Platform" }), el("dd", { text: clip.platform })]),
+            clip.date ? el("div", {}, [el("dt", { text: "Posted" }), el("dd", { text: formatDate(clip.date) })]) : null,
+          ]),
+          el("a", { class: "cta", href: clip.url, target: "_blank", rel: "noopener", text: "Watch now →" }),
+        ]),
+        poster,
+      ]),
+    ]);
+  });
+
+  const numbers = featured.map((_, i) =>
+    el("button", { class: "slide-num", "aria-label": `Show clip ${i + 1}`, text: String(i + 1).padStart(2, "0"), onclick: () => go(i, true) })
+  );
+
+  function go(i, manual) {
+    index = (i + slides.length) % slides.length;
+    slides.forEach((s, n) => { s.classList.toggle("active", n === index); s.setAttribute("aria-hidden", String(n !== index)); });
+    numbers.forEach((b, n) => b.classList.toggle("active", n === index));
+    clearInterval(timer);
+    if (slides.length > 1 && !(manual && matchMedia("(prefers-reduced-motion: reduce)").matches)) {
+      timer = setInterval(() => go(index + 1), 7000);
+    }
+  }
+
+  const nav = slides.length > 1
+    ? el("div", { class: "slide-nav" }, [
+        el("div", { class: "slide-nums" }, numbers),
+        el("div", { class: "arrows" }, [
+          el("button", { class: "arrow", "aria-label": "Previous clip", text: "←", onclick: () => go(index - 1, true) }),
+          el("button", { class: "arrow", "aria-label": "Next clip", text: "→", onclick: () => go(index + 1, true) }),
+        ]),
+      ])
+    : null;
+
+  root.replaceChildren(el("div", { class: "slides" }, slides), nav);
+  go(0);
 }
 
 init();

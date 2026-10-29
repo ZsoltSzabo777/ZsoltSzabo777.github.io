@@ -18,5 +18,12 @@
       "title": "About me",
       "file": "content/about.json"
     }
-  ]
+  ],
+  "stats": [
+    {
+      "value": "180K+",
+      "label": "Followers on my channels"
+    }
+  ],
+  "featuredCount": 4
 }

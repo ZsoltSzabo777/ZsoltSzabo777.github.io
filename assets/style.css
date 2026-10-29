@@ -151,3 +151,84 @@ main { padding: 0 var(--gutter) 96px; min-height: 50vh; }
   .row.vertical .card, .row .card.is-vertical { flex-basis: 46%; }
   .grid.vertical { grid-template-columns: repeat(2, 1fr); gap: 12px; }
 }
+
+/* Featured slider: always dark, like a product showcase */
+.showcase { position: relative; background: #0b0b0b; color: #fff; overflow: hidden; }
+.slides { display: grid; }
+.slide {
+  grid-area: 1 / 1; position: relative; overflow: hidden;
+  opacity: 0; visibility: hidden; transition: opacity 0.6s ease, visibility 0.6s;
+}
+.slide.active { opacity: 1; visibility: visible; }
+.slide-backdrop {
+  position: absolute; inset: -60px; background: center / cover no-repeat;
+  filter: blur(48px) brightness(0.4) saturate(1.2);
+}
+.slide-inner {
+  position: relative; display: grid; grid-template-columns: 1.15fr 1fr; align-items: center; gap: 56px;
+  min-height: min(80vh, 760px); padding: 72px var(--gutter) 120px;
+}
+.slide-label {
+  margin: 0 0 20px; font-size: 12px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+.slide-text h2 {
+  margin: 0; max-width: 14ch; font-size: clamp(36px, 5.2vw, 76px); font-weight: 500;
+  letter-spacing: -0.04em; line-height: 1.02;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.slide-stats {
+  display: flex; flex-wrap: wrap; gap: 20px 48px; margin: 36px 0 32px; padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+.slide-stats dt { font-size: 12px; color: rgba(255, 255, 255, 0.55); }
+.slide-stats dd { margin: 2px 0 0; font-size: 22px; font-weight: 500; letter-spacing: -0.02em; }
+.cta {
+  display: inline-block; color: #fff; text-decoration: none; font-weight: 500;
+  padding-bottom: 3px; border-bottom: 1px solid currentColor; transition: color 0.15s;
+}
+.cta:hover { color: var(--accent-2); }
+.slide-poster {
+  justify-self: center; width: 100%; max-width: 600px; aspect-ratio: 16 / 9;
+  border-radius: 14px; background: #1c1c1c center / cover no-repeat;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+  display: grid; place-items: center; color: rgba(255, 255, 255, 0.5); text-decoration: none;
+  transition: transform 0.4s ease;
+}
+.slide-poster:hover { transform: scale(1.015); }
+.slide-poster.is-vertical { max-width: 320px; aspect-ratio: 9 / 16; }
+.slide-nav {
+  position: absolute; left: var(--gutter); right: var(--gutter); bottom: 36px;
+  display: flex; justify-content: space-between; align-items: end; gap: 16px;
+}
+.slide-nums { display: flex; gap: 16px; }
+.slide-num {
+  width: 64px; padding: 10px 0 0; text-align: left; cursor: pointer;
+  background: none; border: 0; border-top: 2px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.45); font-size: 13px; font-weight: 500;
+  transition: color 0.2s, border-color 0.2s;
+}
+.slide-num:hover { color: #fff; }
+.slide-num.active { color: #fff; border-top-color: var(--accent-2); }
+.showcase .arrow { color: #fff; border-color: rgba(255, 255, 255, 0.25); }
+.showcase .arrow:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.5); }
+
+/* Intro line and stats strip */
+.intro {
+  display: grid; grid-template-columns: 1.4fr 1fr; gap: 48px; align-items: end;
+  padding: 80px var(--gutter) 64px;
+}
+.intro h1 { margin: 0; max-width: 18ch; font-size: clamp(30px, 4.2vw, 54px); font-weight: 500; letter-spacing: -0.035em; line-height: 1.05; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 24px; margin: 0; }
+.stats dt { color: var(--muted); font-size: 13px; }
+.stats dd { margin: 2px 0 0; font-size: 40px; font-weight: 500; letter-spacing: -0.035em; line-height: 1.1; }
+
+@media (max-width: 820px) {
+  .slide-inner { grid-template-columns: 1fr; gap: 28px; min-height: 0; padding: 32px var(--gutter) 104px; }
+  .slide-poster { order: -1; max-width: none; }
+  .slide-poster.is-vertical { max-width: 180px; }
+  .slide-stats { gap: 16px 32px; margin: 24px 0; }
+  .slide-num { width: 40px; }
+  .slide-nums { gap: 10px; }
+  .intro { grid-template-columns: 1fr; gap: 32px; padding: 56px var(--gutter) 40px; }
+}
