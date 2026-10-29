@@ -17,6 +17,13 @@ function el(tag, attrs = {}, children = []) {
   return node;
 }
 
+// Words wrapped in *asterisks* are shown in the accent color.
+function highlight(text) {
+  return String(text || "").split(/(\*[^*]+\*)/).filter(Boolean).map((part) =>
+    /^\*.*\*$/.test(part) ? el("span", { class: "hl", text: part.slice(1, -1) }) : part
+  );
+}
+
 async function loadJSON(path) {
   const res = await fetch(path, { cache: "no-cache" });
   if (!res.ok) throw new Error(`Could not load ${path}`);
@@ -103,21 +110,29 @@ function renderVideos(id, data) {
 
   const rerender = () => render();
   const head = el("div", { class: "section-head" }, [
-    el("div", {}, [el("h2", { text: data.title }), data.intro ? el("p", { text: data.intro }) : null]),
+    el("div", {}, [
+      data.eyebrow ? el("p", { class: "eyebrow", text: data.eyebrow }) : null,
+      el("h2", {}, highlight(data.title)),
+    ]),
+    data.intro ? el("p", { class: "section-intro", text: data.intro }) : null,
   ]);
   const stacked = data.display === "stacked";
   const controls = el("div", { class: "controls" }, [
-    tabs.length > 1 && !stacked
-      ? pillGroup(tabs.map((t) => [t.id, t.label]), tab?.id, (v) => { state.tab[id] = v; rerender(); }, "Platform")
-      : el("span"),
-    pillGroup([["views", "Most viewed"], ["recent", "Most recent"]], sort, (v) => { state.sort[id] = v; rerender(); }, "Sort"),
+    stacked
+      ? el("div", { class: "jump" }, tabs.filter((t) => t.items?.length).map((t) =>
+          el("button", { text: `${t.label} →`, onclick: () => document.getElementById(`row-${id}-${t.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" }) })
+        ))
+      : tabs.length > 1
+        ? pillGroup(tabs.map((t) => [t.id, t.label]), tab?.id, (v) => { state.tab[id] = v; rerender(); }, "Platform")
+        : el("span"),
+    el("div", { class: "sort" }, [el("span", { class: "control-label", text: "Sort by" }), pillGroup([["views", "Most viewed"], ["recent", "Most recent"]], sort, (v) => { state.sort[id] = v; rerender(); }, "Sort")]),
   ]);
 
   if (stacked) {
     // Platforms without clips yet stay hidden on the public site.
     const filled = tabs.filter((t) => t.items?.length);
     if (!filled.length) return [head, el("div", { class: "empty", text: "New clips coming soon." })];
-    return [head, controls, ...filled.map((t) => platformRow(t, sort))];
+    return [head, controls, ...filled.map((t) => platformRow(t, sort, `row-${id}-${t.id}`))];
   }
   return [head, controls, videoGrid(tab, sortItems(tab?.items || [], sort))];
 }
@@ -129,7 +144,7 @@ function videoGrid(tab, items) {
 }
 
 // One platform shown as a horizontal row that scrolls with the arrows or by swiping.
-function platformRow(tab, sort) {
+function platformRow(tab, sort, anchor) {
   const items = sortItems(tab.items || [], sort);
   if (!items.length) {
     return el("section", { class: "platform-block" }, [
@@ -151,7 +166,7 @@ function platformRow(tab, sort) {
   window.addEventListener("resize", updateArrows);
   requestAnimationFrame(updateArrows);
 
-  return el("section", { class: "platform-block" }, [
+  return el("section", { class: "platform-block", id: anchor }, [
     el("div", { class: "platform-head" }, [
       el("h3", {}, [tab.label, el("span", { class: "count", text: String(items.length) })]),
       el("div", { class: "arrows" }, [prev, next]),
@@ -170,7 +185,10 @@ function renderText(data) {
     ...(data.links || []).map((l) => el("a", { href: l.url, target: "_blank", rel: "noopener", text: l.label + " ↗" })),
   ]);
   return [
-    el("div", { class: "section-head" }, [el("h2", { text: data.title })]),
+    el("div", { class: "section-head" }, [el("div", {}, [
+      data.eyebrow ? el("p", { class: "eyebrow", text: data.eyebrow }) : null,
+      el("h2", {}, highlight(data.title)),
+    ])]),
     el("div", { class: "about" }, [
       el("div", {}, (data.paragraphs || []).map((p) => el("p", { text: p }))),
       side,
@@ -204,10 +222,10 @@ async function render() {
 async function init() {
   state.site = await loadJSON("content/site.json");
   const { name, tagline, headline } = state.site;
-  document.title = `${name} | ${tagline}`;
+  document.title = `${name} | ${tagline.replace(/\*/g, "")}`;
   $("#brand").textContent = name;
   $("#tagline").textContent = tagline;
-  $("#hero-title").textContent = headline || name;
+  $("#hero-title").replaceChildren(...highlight(headline || name));
   $("#footer-name").textContent = name;
   $("#year").textContent = new Date().getFullYear();
   $("#nav").replaceChildren(
@@ -228,7 +246,7 @@ async function allClips() {
     const data = state.sections[meta.id];
     if (data.type !== "videos") continue;
     for (const tab of data.tabs || []) {
-      for (const item of tab.items || []) clips.push({ ...item, section: data.title, platform: tab.label });
+      for (const item of tab.items || []) clips.push({ ...item, section: data.title.replace(/\*/g, ""), platform: tab.label });
     }
   }
   return clips;

@@ -1,6 +1,7 @@
 {
   "type": "videos",
-  "title": "My Channels",
+  "eyebrow": "Creator",
+  "title": "My own *channels*",
   "intro": "My own YouTube Shorts and TikTok work, around 180K followers combined.",
   "defaultSort": "views",
   "tabs": [
